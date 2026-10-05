@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BillRouteImport } from './routes/bill'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as RecordsRouteImport } from './routes/records'
+import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +30,53 @@ const ItemsRoute = ItemsRouteImport.update({
   path: '/items',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecordsRoute = RecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
+  '/records': typeof RecordsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
+  '/records': typeof RecordsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
+  '/records': typeof RecordsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/bill' | '/items'
+  fullPaths: '/' | '/bill' | '/items' | '/records' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/bill' | '/items'
-  id: '__root__' | '/' | '/bill' | '/items'
+  to: '/' | '/bill' | '/items' | '/records' | '/settings'
+  id: '__root__' | '/' | '/bill' | '/items' | '/records' | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BillRoute: typeof BillRoute
   ItemsRoute: typeof ItemsRoute
+  RecordsRoute: typeof RecordsRoute
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +102,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ItemsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/records': {
+      id: '/records'
+      path: '/records'
+      fullPath: '/records'
+      preLoaderRoute: typeof RecordsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +123,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BillRoute: BillRoute,
   ItemsRoute: ItemsRoute,
+  RecordsRoute: RecordsRoute,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
