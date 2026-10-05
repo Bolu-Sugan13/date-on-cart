@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BillRouteImport } from './routes/bill'
 import { Route as ItemsRouteImport } from './routes/items'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillRoute = BillRouteImport.update({
+  id: '/bill',
+  path: '/bill',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ItemsRoute = ItemsRouteImport.update({
@@ -25,27 +31,31 @@ const ItemsRoute = ItemsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/items'
+  fullPaths: '/' | '/bill' | '/items'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/items'
-  id: '__root__' | '/' | '/items'
+  to: '/' | '/bill' | '/items'
+  id: '__root__' | '/' | '/bill' | '/items'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BillRoute: typeof BillRoute
   ItemsRoute: typeof ItemsRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bill': {
+      id: '/bill'
+      path: '/bill'
+      fullPath: '/bill'
+      preLoaderRoute: typeof BillRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/items': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BillRoute: BillRoute,
   ItemsRoute: ItemsRoute,
 }
 export const routeTree = rootRouteImport
