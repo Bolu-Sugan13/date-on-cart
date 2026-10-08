@@ -24,7 +24,7 @@ export const Route = createFileRoute("/settings")({
 
 function extractId(v: string) {
   const m = v.match(/\/d\/([A-Za-z0-9_-]+)/);
-  return (m ? m[1] : v).trim();
+  return (m?.[1] ?? v).trim();
 }
 
 function SettingsPage() {

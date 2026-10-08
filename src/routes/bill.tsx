@@ -49,9 +49,9 @@ function BillPage() {
   const changeQty = (key: string, d: number) =>
     setLines((prev) => prev.flatMap((l) => (l.key !== key ? [l] : l.qty + d <= 0 ? [] : [{ ...l, qty: l.qty + d, subtotal: (l.qty + d) * l.price }])));
 
-  const save = async () => {
+  const save = async (): Promise<void> => {
     if (!lines.length) return;
-    if (!payment) return toast.error("Choose a payment method");
+    if (!payment) { toast.error("Choose a payment method"); return; }
     const sale = createSale({ service, payment, items: lines.map(({ key: _k, ...l }) => l) });
     setReview(false);
     setDone(sale);
@@ -208,7 +208,7 @@ function PickDialog({ item, onClose, onAdd }: { item: Item | null; onClose: () =
 }
 
 function PickBody({ item, onDone }: { item: Item; onDone: (s: Size, q: number) => void }) {
-  const [size, setSize] = useState<Size | null>(item.hasSizes && item.sizes.length > 1 ? null : item.sizes[0]);
+  const [size, setSize] = useState<Size | null>(item.hasSizes && item.sizes.length > 1 ? null : (item.sizes[0] ?? null));
   const [qty, setQty] = useState(1);
   return (
     <>

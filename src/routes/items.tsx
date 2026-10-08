@@ -109,20 +109,20 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
     item?.hasSizes ? item.sizes.map((s) => ({ id: s.id, name: s.name, price: String(s.price) })) : [{ id: uid(), name: "", price: "" }],
   );
 
-  const save = () => {
+  const save = (): void => {
     const n = name.trim();
-    if (!n) return toast.error("Enter a dessert name");
+    if (!n) { toast.error("Enter a dessert name"); return; }
     let sizes;
     if (hasSizes) {
       const valid = rows.filter((r) => r.name.trim() || r.price);
-      if (!valid.length) return toast.error("Add at least one size");
+      if (!valid.length) { toast.error("Add at least one size"); return; }
       for (const r of valid) {
-        if (!r.name.trim()) return toast.error("Every size needs a name");
-        if (!(Number(r.price) > 0)) return toast.error(`Enter a price for ${r.name}`);
+        if (!r.name.trim()) { toast.error("Every size needs a name"); return; }
+        if (!(Number(r.price) > 0)) { toast.error(`Enter a price for ${r.name}`); return; }
       }
       sizes = valid.map((r) => ({ id: r.id, name: r.name.trim(), price: Number(r.price) }));
     } else {
-      if (!(Number(single) > 0)) return toast.error("Enter a price");
+      if (!(Number(single) > 0)) { toast.error("Enter a price"); return; }
       sizes = [{ id: item?.sizes[0]?.id ?? uid(), name: "", price: Number(single) }];
     }
     saveItem({ id: item?.id ?? uid(), name: n, hasSizes, enabled: item?.enabled ?? true, sizes, createdAt: item?.createdAt });

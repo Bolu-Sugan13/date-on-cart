@@ -29,7 +29,7 @@ export type Sale = {
   payment: Payment;
   total: number;
   syncStatus: SyncStatus;
-  syncError?: string;
+  syncError?: string | undefined;
   items: SaleLine[];
 };
 export type Settings = { businessName: string; nextBill: number; spreadsheetId: string };
@@ -92,7 +92,7 @@ export const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
 // Items
-export function saveItem(item: Omit<Item, "createdAt" | "updatedAt"> & { createdAt?: string }) {
+export function saveItem(item: Omit<Item, "createdAt" | "updatedAt"> & { createdAt?: string | undefined }) {
   const s = getState();
   const now = new Date().toISOString();
   const exists = s.items.some((i) => i.id === item.id);
