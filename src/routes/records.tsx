@@ -67,9 +67,9 @@ function Records() {
       const d = new Date(s.createdAt);
       if (month && format(d, "yyyy-MM") !== month) return false;
       if (r && !isWithinInterval(d, { start: r[0], end: r[1] })) return false;
-      const svc = types.filter((t) => t === "Dine In" || t === "Take Away");
-      const pay = types.filter((t) => !svc.includes(t));
-      if (svc.length && !svc.includes(s.service)) return false;
+      const svc: string[] = types.filter((t) => t === "Dine In" || t === "Take Away");
+      const pay = types.filter((t) => !(svc as string[]).includes(t));
+      if (svc.length && !(svc as string[]).includes(s.service)) return false;
       if (pay.length && !pay.includes(s.payment)) return false;
       if (term && !String(s.billNumber).includes(term) && !s.items.some((l) => l.name.toLowerCase().includes(term))) return false;
       return true;
