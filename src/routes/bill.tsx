@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState, PageHeader } from "@/components/AppShell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { createSale, inr, useStore, type Item, type Payment, type Sale, type SaleLine, type Service, type Size } from "@/lib/store";
+import { StatusPicker } from "@/components/SaleDetail";
+import { CATEGORIES, createSale, inr, useStore, type Category, type Item, type PaymentMethod, type PaymentStatus, type Sale, type SaleLine, type Service, type Size } from "@/lib/store";
 import { syncPending } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 
@@ -28,12 +29,15 @@ function BillPage() {
   const [picking, setPicking] = useState<Item | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [service, setService] = useState<Service>("Take Away");
-  const [payment, setPayment] = useState<Payment | null>(null);
+  const [payment, setPayment] = useState<PaymentMethod | null>(null);
+  const [status, setStatus] = useState<PaymentStatus | null>(null);
+  const [note, setNote] = useState("");
+  const [cat, setCat] = useState<Category | "All">("All");
   const [review, setReview] = useState(false);
   const [done, setDone] = useState<Sale | null>(null);
   const navigate = useNavigate();
 
-  const filtered = useMemo(() => items.filter((i) => i.name.toLowerCase().includes(q.toLowerCase())), [items, q]);
+  const filtered = useMemo(() => items.filter((i) => (cat === "All" || i.category === cat) && i.name.toLowerCase().includes(q.toLowerCase())), [items, q, cat]);
   const total = lines.reduce((a, l) => a + l.subtotal, 0);
   const count = lines.reduce((a, l) => a + l.qty, 0);
 
@@ -42,7 +46,7 @@ function BillPage() {
     setLines((prev) => {
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + qty, subtotal: (l.qty + qty) * l.price } : l));
-      return [...prev, { key, itemId: item.id, name: item.name, size: size.name, qty, price: size.price, subtotal: qty * size.price }];
+      return [...prev, { key, itemId: item.id, category: item.category, name: item.name, size: size.name, qty, price: size.price, subtotal: qty * size.price }];
     });
     toast.success(`${item.name}${size.name ? ` (${size.name})` : ""} × ${qty} added`, { duration: 1200 });
   };
@@ -51,12 +55,15 @@ function BillPage() {
 
   const save = async (): Promise<void> => {
     if (!lines.length) return;
-    if (!payment) { toast.error("Choose a payment method"); return; }
-    const sale = createSale({ service, payment, items: lines.map(({ key: _k, ...l }) => l) });
+    if (!status) { toast.error("Choose a payment status"); return; }
+    if (status === "Other" && !note.trim()) { toast.error("Enter a payment note"); return; }
+    const sale = createSale({ service, paymentStatus: status, paymentMethod: payment ?? undefined, paymentNote: note.trim() || undefined, items: lines.map(({ key: _k, ...l }) => l) });
     setReview(false);
     setDone(sale);
     setLines([]);
     setPayment(null);
+    setStatus(null);
+    setNote("");
     void syncPending();
   };
 
@@ -68,7 +75,7 @@ function BillPage() {
             <Check className="size-12" strokeWidth={3} />
           </div>
           <h1 className="mt-6 text-2xl font-black">SALE SAVED</h1>
-          <p className="mt-1 text-muted-foreground">Transaction #{done.billNumber} has been saved successfully.</p>
+          <p className="mt-1 text-muted-foreground">Bill #{done.billNumber} saved as <b>{done.paymentStatus}</b>.</p>
           <div className="mt-2 text-3xl font-black">{inr(done.total)}</div>
           <div className="mt-8 grid gap-2">
             <button onClick={() => setDone(null)} className="press rounded-2xl bg-primary py-4 font-extrabold text-primary-foreground shadow-lift">New Bill</button>
@@ -89,7 +96,17 @@ function BillPage() {
           <>
             <div className="relative mb-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search dessert..." className="w-full rounded-2xl bg-card py-4 pl-12 pr-4 font-semibold shadow-soft outline-none focus:ring-2 focus:ring-ring" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item..." className="w-full rounded-2xl bg-card py-4 pl-12 pr-4 font-semibold shadow-soft outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
+              {(["All", ...CATEGORIES] as const).map((c) => {
+                const n = c === "All" ? items.length : items.filter((i) => i.category === c).length;
+                return (
+                  <button key={c} onClick={() => setCat(c)} className={cn("press shrink-0 rounded-full px-4 py-2 text-sm font-bold", cat === c ? "bg-foreground text-background" : "bg-card text-muted-foreground shadow-soft")}>
+                    {c} <span className="opacity-60">{n}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {filtered.map((it) => {
@@ -106,7 +123,7 @@ function BillPage() {
                   </button>
                 );
               })}
-              {filtered.length === 0 && <p className="col-span-full text-center text-muted-foreground py-8">No dessert matches "{q}"</p>}
+              {filtered.length === 0 && <p className="col-span-full text-center text-muted-foreground py-8">{q ? `No item matches "${q}"` : "No items in this category yet"}</p>}
             </div>
           </>
         )}
@@ -145,15 +162,23 @@ function BillPage() {
               </button>
             ))}
           </div>
-          <div className="text-xs font-bold text-muted-foreground">PAYMENT METHOD</div>
+          <div className="text-xs font-bold text-muted-foreground">PAYMENT STATUS</div>
+          <StatusPicker value={status} onChange={setStatus} />
+          {status === "Other" && (
+            <>
+              <label className="text-xs font-bold text-muted-foreground">PAYMENT NOTE *</label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} rows={2} placeholder="Describe the payment situation..." className="w-full rounded-xl bg-secondary px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+            </>
+          )}
+          <div className="text-xs font-bold text-muted-foreground">PAYMENT METHOD (OPTIONAL)</div>
           <div className="grid grid-cols-4 gap-2">
-            {(["Cash", "UPI", "Card", "Other"] as Payment[]).map((p) => (
-              <button key={p} onClick={() => setPayment(p)} className={cn("press rounded-xl py-3 font-bold border-2", payment === p ? "border-primary bg-primary/10 text-foreground" : "border-transparent bg-secondary text-muted-foreground")}>{p}</button>
+            {(["Cash", "UPI", "Card", "Other"] as PaymentMethod[]).map((p) => (
+              <button key={p} onClick={() => setPayment(payment === p ? null : p)} className={cn("press rounded-xl py-3 font-bold border-2", payment === p ? "border-primary bg-primary/10 text-foreground" : "border-transparent bg-secondary text-muted-foreground")}>{p}</button>
             ))}
           </div>
           <div className="flex justify-between rounded-2xl bg-secondary p-4 text-sm">
             <span>Service <b className="block text-base">{service}</b></span>
-            <span className="text-right">Payment <b className="block text-base">{payment ?? "—"}</b></span>
+            <span className="text-right">Payment <b className="block text-base">{status ?? "—"}</b></span>
           </div>
           <button onClick={save} disabled={!lines.length} className="press w-full rounded-2xl bg-primary py-4 text-lg font-black text-primary-foreground shadow-lift disabled:opacity-40">
             SAVE RECORD · {inr(total)}

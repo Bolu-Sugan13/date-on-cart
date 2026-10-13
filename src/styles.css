@@ -45,6 +45,8 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-cocoa: var(--cocoa);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --shadow-soft: var(--shadow-soft);
   --shadow-lift: var(--shadow-lift);
   --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
@@ -88,6 +90,8 @@
   --success: oklch(0.6 0.07 155);           /* #5F8D70 */
   --success-foreground: oklch(0.99 0 0);
   --cocoa: oklch(0.42 0.07 40);
+  --warning: oklch(0.72 0.15 70);
+  --warning-foreground: oklch(0.25 0.04 40);
   --border: oklch(0.92 0.025 70);
   --input: oklch(0.92 0.025 70);
   --ring: oklch(0.68 0.11 65);

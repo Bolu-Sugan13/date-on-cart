@@ -131,3 +131,18 @@ export function SyncBadge({ status }: { status: "SYNCED" | "PENDING" | "FAILED" 
     </span>
   );
 }
+
+export function PaymentBadge({ status }: { status: "Paid" | "Pending" | "Other" }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase",
+        status === "Paid" && "bg-success/15 text-success",
+        status === "Pending" && "bg-warning/20 text-warning-foreground",
+        status === "Other" && "bg-cocoa/15 text-cocoa",
+      )}
+    >
+      {status}
+    </span>
+  );
+}

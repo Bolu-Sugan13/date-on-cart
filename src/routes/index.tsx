@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, isSameDay, isSameMonth } from "date-fns";
 import { Plus, ShoppingBag, Utensils } from "lucide-react";
 import { useState } from "react";
-import { EmptyState, SyncBadge } from "@/components/AppShell";
+import { EmptyState, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
 import { inr, useStore, type Sale } from "@/lib/store";
 
@@ -27,6 +27,7 @@ function Home() {
   const month = sales.filter((s) => isSameMonth(new Date(s.createdAt), now));
   const tTotal = today.reduce((a, s) => a + s.total, 0);
   const mTotal = month.reduce((a, s) => a + s.total, 0);
+  const pend = sales.filter((s) => s.paymentStatus === "Pending");
 
   return (
     <div className="space-y-6">
@@ -51,6 +52,16 @@ function Home() {
       >
         <Plus className="size-6" /> NEW BILL
       </Link>
+
+      {pend.length > 0 && (
+        <Link to="/records" search={{ view: "pending" }} className="press flex items-center justify-between rounded-3xl bg-warning/20 p-5 shadow-soft">
+          <div>
+            <div className="text-xs font-bold text-warning-foreground">PENDING PAYMENTS</div>
+            <div className="text-2xl font-black">{inr(pend.reduce((a, s) => a + s.total, 0))}</div>
+          </div>
+          <span className="text-sm font-bold">{pend.length} bill{pend.length > 1 ? "s" : ""} →</span>
+        </Link>
+      )}
 
       <section className="rounded-3xl bg-secondary p-5">
         <div className="text-xs font-bold text-cocoa">CURRENT MONTH · {format(now, "MMMM").toUpperCase()}</div>
@@ -94,9 +105,9 @@ export function SaleRow({ sale, onClick }: { sale: Sale; onClick: () => void }) 
         {sale.service === "Dine In" ? <Utensils className="size-5" /> : <ShoppingBag className="size-5" />}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-bold flex items-center gap-2">#{sale.billNumber} <SyncBadge status={sale.syncStatus} /></div>
+        <div className="font-bold flex items-center gap-2">#{sale.billNumber} <PaymentBadge status={sale.paymentStatus} /> <SyncBadge status={sale.syncStatus} /></div>
         <div className="text-xs text-muted-foreground">
-          {format(new Date(sale.createdAt), "d MMM, hh:mm a")} · {sale.service} · {sale.payment}
+          {format(new Date(sale.createdAt), "d MMM, hh:mm a")} · {sale.service}{sale.paymentMethod ? ` · ${sale.paymentMethod}` : ""}
         </div>
       </div>
       <div className="text-lg font-black">{inr(sale.total)}</div>
