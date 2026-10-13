@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, isSameDay, isSameMonth } from "date-fns";
 import { Plus, ShoppingBag, Utensils } from "lucide-react";
 import { useState } from "react";
-import { EmptyState, SyncBadge } from "@/components/AppShell";
+import { EmptyState, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
 import { inr, useStore, type Sale } from "@/lib/store";
 
@@ -94,9 +94,9 @@ export function SaleRow({ sale, onClick }: { sale: Sale; onClick: () => void }) 
         {sale.service === "Dine In" ? <Utensils className="size-5" /> : <ShoppingBag className="size-5" />}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-bold flex items-center gap-2">#{sale.billNumber} <SyncBadge status={sale.syncStatus} /></div>
+        <div className="font-bold flex items-center gap-2">#{sale.billNumber} <PaymentBadge status={sale.paymentStatus} /> <SyncBadge status={sale.syncStatus} /></div>
         <div className="text-xs text-muted-foreground">
-          {format(new Date(sale.createdAt), "d MMM, hh:mm a")} · {sale.service} · {sale.payment}
+          {format(new Date(sale.createdAt), "d MMM, hh:mm a")} · {sale.service}{sale.paymentMethod ? ` · ${sale.paymentMethod}` : ""}
         </div>
       </div>
       <div className="text-lg font-black">{inr(sale.total)}</div>
