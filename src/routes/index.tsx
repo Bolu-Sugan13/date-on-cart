@@ -27,6 +27,7 @@ function Home() {
   const month = sales.filter((s) => isSameMonth(new Date(s.createdAt), now));
   const tTotal = today.reduce((a, s) => a + s.total, 0);
   const mTotal = month.reduce((a, s) => a + s.total, 0);
+  const pend = sales.filter((s) => s.paymentStatus === "Pending");
 
   return (
     <div className="space-y-6">
@@ -51,6 +52,16 @@ function Home() {
       >
         <Plus className="size-6" /> NEW BILL
       </Link>
+
+      {pend.length > 0 && (
+        <Link to="/records" search={{ view: "pending" }} className="press flex items-center justify-between rounded-3xl bg-warning/20 p-5 shadow-soft">
+          <div>
+            <div className="text-xs font-bold text-warning-foreground">PENDING PAYMENTS</div>
+            <div className="text-2xl font-black">{inr(pend.reduce((a, s) => a + s.total, 0))}</div>
+          </div>
+          <span className="text-sm font-bold">{pend.length} bill{pend.length > 1 ? "s" : ""} →</span>
+        </Link>
+      )}
 
       <section className="rounded-3xl bg-secondary p-5">
         <div className="text-xs font-bold text-cocoa">CURRENT MONTH · {format(now, "MMMM").toUpperCase()}</div>
