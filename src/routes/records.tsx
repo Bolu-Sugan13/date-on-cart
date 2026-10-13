@@ -3,14 +3,14 @@ import { endOfDay, format, isWithinInterval, startOfDay, startOfMonth, startOfWe
 import { ChevronLeft, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { EmptyState, PageHeader, SyncBadge } from "@/components/AppShell";
+import { EmptyState, PageHeader, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
 import { inr, useStore, type Sale } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { SaleRow } from "./index";
 
 export const Route = createFileRoute("/records")({
-  validateSearch: z.object({ bill: z.number().optional() }),
+  validateSearch: z.object({ bill: z.number().optional(), view: z.enum(["pending"]).optional() }),
   head: () => ({
     meta: [
       { title: "Sales Records — Dessert Cart" },
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/records")({
 });
 
 const PERIODS = ["All", "Today", "Yesterday", "This Week", "This Month", "Last Month", "Custom"] as const;
-const TYPES = ["Dine In", "Take Away", "Cash", "UPI", "Card", "Other"] as const;
+const TYPES = ["Dine In", "Take Away", "Paid", "Pending", "Other"] as const;
 
 function range(p: (typeof PERIODS)[number], from: string, to: string): [Date, Date] | null {
   const n = new Date();
@@ -40,12 +40,12 @@ function range(p: (typeof PERIODS)[number], from: string, to: string): [Date, Da
 
 function Records() {
   const sales = useStore((s) => s.sales);
-  const { bill } = Route.useSearch();
+  const { bill, view: sv } = Route.useSearch();
   const [view, setView] = useState<"list" | "months">("list");
   const [month, setMonth] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("All");
-  const [types, setTypes] = useState<string[]>([]);
+  const [types, setTypes] = useState<string[]>(sv === "pending" ? ["Pending"] : []);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [open, setOpen] = useState<Sale | null>(null);
@@ -70,7 +70,7 @@ function Records() {
       const svc: string[] = types.filter((t) => t === "Dine In" || t === "Take Away");
       const pay = types.filter((t) => !(svc as string[]).includes(t));
       if (svc.length && !(svc as string[]).includes(s.service)) return false;
-      if (pay.length && !pay.includes(s.payment)) return false;
+      if (pay.length && !pay.includes(s.paymentStatus)) return false;
       if (term && !String(s.billNumber).includes(term) && !s.items.some((l) => l.name.toLowerCase().includes(term))) return false;
       return true;
     });
@@ -145,7 +145,7 @@ function Records() {
               <div className="hidden md:block overflow-hidden rounded-3xl bg-card shadow-soft">
                 <table className="w-full text-sm">
                   <thead className="bg-secondary text-left text-xs text-cocoa">
-                    <tr>{["Bill No", "Date", "Time", "Service", "Payment", "Sync", "Total"].map((h) => <th key={h} className={cn("px-4 py-3 font-bold", h === "Total" && "text-right")}>{h}</th>)}</tr>
+                    <tr>{["Bill No", "Date", "Time", "Service", "Payment Status", "Sync", "Total"].map((h) => <th key={h} className={cn("px-4 py-3 font-bold", h === "Total" && "text-right")}>{h}</th>)}</tr>
                   </thead>
                   <tbody className="divide-y">
                     {filtered.map((s) => {
@@ -156,7 +156,7 @@ function Records() {
                           <td className="px-4 py-3">{format(d, "d MMM yyyy")}</td>
                           <td className="px-4 py-3">{format(d, "hh:mm a")}</td>
                           <td className="px-4 py-3">{s.service}</td>
-                          <td className="px-4 py-3">{s.payment}</td>
+                          <td className="px-4 py-3"><PaymentBadge status={s.paymentStatus} /></td>
                           <td className="px-4 py-3"><SyncBadge status={s.syncStatus} /></td>
                           <td className="px-4 py-3 text-right font-black">{inr(s.total)}</td>
                         </tr>
