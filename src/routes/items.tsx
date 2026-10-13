@@ -125,7 +125,7 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
       if (!(Number(single) > 0)) { toast.error("Enter a price"); return; }
       sizes = [{ id: item?.sizes[0]?.id ?? uid(), name: "", price: Number(single) }];
     }
-    saveItem({ id: item?.id ?? uid(), name: n, hasSizes, enabled: item?.enabled ?? true, sizes, createdAt: item?.createdAt });
+    saveItem({ id: item?.id ?? uid(), category: item?.category ?? "Desserts", description: item?.description ?? "", name: n, hasSizes, enabled: item?.enabled ?? true, sizes, createdAt: item?.createdAt });
     toast.success(item ? "Dessert updated" : "Dessert added");
     onClose();
   };
