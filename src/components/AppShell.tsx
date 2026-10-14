@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Plus, ScrollText, Cake, Settings } from "lucide-react";
+import { Home, Plus, ScrollText, Cake, Settings, Clock } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { syncPending } from "@/lib/sync";
@@ -30,10 +30,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background md:flex">
       <aside className="hidden md:flex md:w-60 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground p-4 gap-1">
         <div className="px-3 py-4 mb-4">
-          <div className="text-xl font-extrabold">🍰 Dessert Cart</div>
-          <div className="text-xs opacity-70">Digital Billing & Sales</div>
+          <div className="flex items-center gap-3"><img src="/icon-192.png" alt="Date" width={44} height={44} className="rounded-full" /><div><div className="font-display text-xl font-bold">Date</div><div className="text-xs opacity-70">Desserts & Coffee · White Town</div></div></div>
         </div>
-        {[NAV[0], NAV[2], NAV[1], NAV[3], NAV[4]].map((n) => {
+        {[NAV[0], NAV[2], NAV[1], { to: "/pending", label: "Pending Payments", icon: Clock } as const, NAV[3], NAV[4]].map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           const Icon = n.icon;
           return (
