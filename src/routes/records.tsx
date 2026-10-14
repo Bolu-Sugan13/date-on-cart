@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { EmptyState, PageHeader, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
-import { CATEGORIES, inr, useStore, type Sale } from "@/lib/store";
+import { inr, useStore, type Sale } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { SaleRow } from "./index";
 
@@ -61,6 +61,7 @@ function Records() {
     return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [sales]);
 
+  const catNames = useStore((st) => st.categories).map((c) => c.name);
   const filtered = useMemo(() => {
     const r = range(period, from, to);
     const term = q.trim().toLowerCase();
@@ -138,7 +139,7 @@ function Records() {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
-            {["All", ...CATEGORIES].map((c) => (
+            {["All", ...catNames].map((c) => (
               <button key={c} onClick={() => setCat(c)} className={cn("press shrink-0 rounded-full border-2 px-3 py-1.5 text-xs font-bold", cat === c ? "border-primary bg-primary/10" : "border-border text-muted-foreground")}>{c === "All" ? "All Categories" : c}</button>
             ))}
           </div>

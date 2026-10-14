@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { EmptyState, PageHeader } from "@/components/AppShell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusPicker } from "@/components/SaleDetail";
-import { CATEGORIES, createSale, inr, useStore, type Category, type Item, type PaymentMethod, type PaymentStatus, type Sale, type SaleLine, type Service, type Size } from "@/lib/store";
+import { createSale, inr, useStore, type Category, type Item, type PaymentMethod, type PaymentStatus, type Sale, type SaleLine, type Service, type Size } from "@/lib/store";
 import { syncPending } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,8 @@ function BillPage() {
   const [done, setDone] = useState<Sale | null>(null);
   const navigate = useNavigate();
 
+  const allCats = useStore((st) => st.categories);
+  const cats = useMemo(() => allCats.filter((c) => !c.archived).map((c) => c.name), [allCats]);
   const filtered = useMemo(() => items.filter((i) => (cat === "All" || i.category === cat) && i.name.toLowerCase().includes(q.toLowerCase())), [items, q, cat]);
   const total = lines.reduce((a, l) => a + l.subtotal, 0);
   const count = lines.reduce((a, l) => a + l.qty, 0);
@@ -99,7 +101,7 @@ function BillPage() {
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item..." className="w-full rounded-2xl bg-card py-4 pl-12 pr-4 font-semibold shadow-soft outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
-              {(["All", ...CATEGORIES] as const).map((c) => {
+              {["All", ...cats].map((c) => {
                 const n = c === "All" ? items.length : items.filter((i) => i.category === c).length;
                 return (
                   <button key={c} onClick={() => setCat(c)} className={cn("press shrink-0 rounded-full px-4 py-2 text-sm font-bold", cat === c ? "bg-foreground text-background" : "bg-card text-muted-foreground shadow-soft")}>
