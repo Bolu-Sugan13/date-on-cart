@@ -6,7 +6,7 @@ import { EmptyState, PageHeader } from "@/components/AppShell";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { deleteItem, inr, saveItem, toggleItem, uid, useStore, type Item } from "@/lib/store";
+import { CATEGORIES, deleteItem, inr, saveItem, toggleItem, uid, useStore, type Category, type Item } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/items")({
@@ -25,6 +25,8 @@ function ItemsPage() {
   const items = useStore((s) => s.items);
   const [editing, setEditing] = useState<Item | "new" | null>(null);
   const [del, setDel] = useState<Item | null>(null);
+  const [cat, setCat] = useState<Category | "All">("All");
+  const shown = cat === "All" ? items : items.filter((i) => i.category === cat);
 
   const addBtn = (
     <button onClick={() => setEditing("new")} className="press flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-3 font-bold text-primary-foreground shadow-soft">
@@ -34,17 +36,27 @@ function ItemsPage() {
 
   return (
     <div>
-      <PageHeader title="Your Desserts" subtitle={`${items.length} item${items.length === 1 ? "" : "s"}`} action={items.length > 0 && addBtn} />
+      <PageHeader title="Your Items" subtitle={`${items.length} item${items.length === 1 ? "" : "s"}`} action={items.length > 0 && addBtn} />
       {items.length === 0 ? (
-        <EmptyState icon="🍮" title="No desserts added yet." text="Add your first dessert to start billing." action={addBtn} />
+        <EmptyState icon="🍮" title="No items added yet." text="Add your first item to start billing." action={addBtn} />
       ) : (
+        <>
+        <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
+          {(["All", ...CATEGORIES] as const).map((c) => (
+            <button key={c} onClick={() => setCat(c)} className={cn("press shrink-0 rounded-full px-3.5 py-2 text-sm font-bold", cat === c ? "bg-foreground text-background" : "bg-card text-muted-foreground shadow-soft")}>
+              {c} <span className="opacity-60">{c === "All" ? items.length : items.filter((i) => i.category === c).length}</span>
+            </button>
+          ))}
+        </div>
+        {shown.length === 0 && <p className="py-10 text-center text-muted-foreground">No items in {cat} yet.</p>}
         <div className="grid gap-3 md:grid-cols-2">
-          {items.map((it) => (
+          {shown.map((it) => (
             <div key={it.id} className={cn("rounded-3xl bg-card p-5 shadow-soft transition hover:shadow-lift", !it.enabled && "opacity-60")}>
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="text-lg font-extrabold">{it.name}</h3>
-                  <p className="text-xs font-semibold text-muted-foreground">{it.enabled ? "Available for billing" : "Disabled"}</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{it.category} · {it.enabled ? "Available for billing" : "Disabled"}</p>
+                  {it.description && <p className="mt-1 text-sm text-muted-foreground">{it.description}</p>}
                 </div>
                 <Switch checked={it.enabled} onCheckedChange={() => toggleItem(it.id)} aria-label="Enable dessert" />
               </div>
@@ -67,6 +79,7 @@ function ItemsPage() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       <ItemForm item={editing} onClose={() => setEditing(null)} />
@@ -103,6 +116,8 @@ function ItemForm({ item, onClose }: { item: Item | "new" | null; onClose: () =>
 
 function FormBody({ item, onClose }: { item: Item | null; onClose: () => void }) {
   const [name, setName] = useState(item?.name ?? "");
+  const [category, setCategory] = useState<Category>(item?.category ?? "Desserts");
+  const [description, setDescription] = useState(item?.description ?? "");
   const [hasSizes, setHasSizes] = useState(item?.hasSizes ?? false);
   const [single, setSingle] = useState(item && !item.hasSizes ? String(item.sizes[0]?.price ?? "") : "");
   const [rows, setRows] = useState<Row[]>(
@@ -125,7 +140,7 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
       if (!(Number(single) > 0)) { toast.error("Enter a price"); return; }
       sizes = [{ id: item?.sizes[0]?.id ?? uid(), name: "", price: Number(single) }];
     }
-    saveItem({ id: item?.id ?? uid(), category: item?.category ?? "Desserts", description: item?.description ?? "", name: n, hasSizes, enabled: item?.enabled ?? true, sizes, createdAt: item?.createdAt });
+    saveItem({ id: item?.id ?? uid(), category, description: description.trim(), name: n, hasSizes, enabled: item?.enabled ?? true, sizes, createdAt: item?.createdAt });
     toast.success(item ? "Dessert updated" : "Dessert added");
     onClose();
   };
@@ -137,6 +152,15 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
       <DialogHeader><DialogTitle className="text-xl font-extrabold">{item ? "Edit Dessert" : "Add Dessert"}</DialogTitle></DialogHeader>
       <label className="text-sm font-bold">Dessert Name</label>
       <input autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={60} className={input} placeholder="e.g. Chocolate Brownie" />
+
+      <label className="text-sm font-bold">Category</label>
+      <div className="grid grid-cols-3 gap-2">
+        {CATEGORIES.map((c) => (
+          <button key={c} onClick={() => setCategory(c)} className={cn("press rounded-xl px-2 py-2.5 text-sm font-bold", category === c ? "bg-primary text-primary-foreground shadow-soft" : "bg-secondary text-muted-foreground")}>{c}</button>
+        ))}
+      </div>
+      <label className="text-sm font-bold">Description <span className="font-normal text-muted-foreground">(optional)</span></label>
+      <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={150} rows={2} className={input} placeholder="e.g. Rich chocolate with walnuts" />
 
       <div className="text-sm font-bold">Does this dessert have sizes?</div>
       <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
