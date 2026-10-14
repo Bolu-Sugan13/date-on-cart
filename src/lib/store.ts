@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from "react";
 
-export const CATEGORIES = ["Coffee", "Matcha", "Coconut Cloud", "Hojicha", "Ube", "Desserts"] as const;
-export type Category = (typeof CATEGORIES)[number];
+export const DEFAULT_CATEGORIES = ["Coffee", "Matcha", "Coconut Cloud", "Hojicha", "Ube", "Desserts"];
+export type Category = string;
+export type CategoryRec = { id: string; name: string; description: string; archived: boolean; createdAt: string; updatedAt: string };
 
 export type Size = { id: string; name: string; price: number };
 export type Item = {
@@ -45,13 +46,14 @@ export type Sale = {
   items: SaleLine[];
 };
 export type Settings = { businessName: string; nextBill: number; spreadsheetId: string };
-export type State = { items: Item[]; sales: Sale[]; settings: Settings };
+export type State = { categories: CategoryRec[]; items: Item[]; sales: Sale[]; settings: Settings };
 
 const KEY = "dessert-cart:v1";
 const EMPTY: State = {
+  categories: [],
   items: [],
   sales: [],
-  settings: { businessName: "Dessert Cart", nextBill: 1001, spreadsheetId: "" },
+  settings: { businessName: "Date — Desserts & Coffee", nextBill: 1001, spreadsheetId: "" },
 };
 
 let state: State = EMPTY;
@@ -62,7 +64,7 @@ const listeners = new Set<() => void>();
 function migrate(p: State): State {
   const items = (p.items ?? []).map((i) => ({
     ...i,
-    category: (CATEGORIES as readonly string[]).includes(i.category) ? i.category : "Desserts",
+    category: i.category || "Desserts",
     description: i.description ?? "",
   })) as Item[];
   const sales = (p.sales ?? []).map((raw) => {
@@ -77,7 +79,14 @@ function migrate(p: State): State {
       items: s.items.map((l) => ({ ...l, category: l.category ?? "" })),
     };
   });
-  return { ...EMPTY, ...p, items, sales, settings: { ...EMPTY.settings, ...p.settings } };
+  const now = new Date().toISOString();
+  let categories = p.categories ?? [];
+  if (!categories.length)
+    categories = DEFAULT_CATEGORIES.map((name, n) => ({ id: "c" + n, name, description: "", archived: false, createdAt: now, updatedAt: now }));
+  for (const it of items)
+    if (!categories.some((c) => c.name === it.category))
+      categories = [...categories, { id: uid(), name: it.category, description: "", archived: false, createdAt: now, updatedAt: now }];
+  return { ...EMPTY, ...p, categories, items, sales, settings: { ...EMPTY.settings, ...p.settings } };
 }
 
 function load() {
@@ -85,9 +94,9 @@ function load() {
   loaded = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) state = migrate(JSON.parse(raw) as State);
+    state = migrate(raw ? (JSON.parse(raw) as State) : EMPTY);
   } catch {
-    /* ignore corrupt data */
+    state = migrate(EMPTY);
   }
 }
 
@@ -209,3 +218,36 @@ export function updateSettings(patch: Partial<Settings>) {
 }
 
 export const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+
+// Categories
+export const normName = (n: string) => n.trim().replace(/\s+/g, " ");
+export function saveCategory(c: { id?: string | undefined; name: string; description: string }): string | null {
+  const s = getState();
+  const name = normName(c.name);
+  if (!name) return "Enter a category name";
+  if (s.categories.some((x) => x.id !== c.id && x.name.toLowerCase() === name.toLowerCase())) return "A category with this name already exists";
+  const now = new Date().toISOString();
+  const old = s.categories.find((x) => x.id === c.id);
+  if (old) {
+    set({
+      ...s,
+      categories: s.categories.map((x) => (x.id === c.id ? { ...x, name, description: c.description.trim(), updatedAt: now } : x)),
+      items: s.items.map((i) => (i.category === old.name ? { ...i, category: name } : i)),
+    });
+  } else {
+    set({ ...s, categories: [...s.categories, { id: uid(), name, description: c.description.trim(), archived: false, createdAt: now, updatedAt: now }] });
+  }
+  return null;
+}
+export function setCategoryArchived(id: string, archived: boolean) {
+  const s = getState();
+  set({ ...s, categories: s.categories.map((x) => (x.id === id ? { ...x, archived, updatedAt: new Date().toISOString() } : x)) });
+}
+export function categoryInUse(name: string) {
+  const s = getState();
+  return s.items.some((i) => i.category === name) || s.sales.some((x) => x.items.some((l) => l.category === name));
+}
+export function deleteCategory(id: string) {
+  const s = getState();
+  set({ ...s, categories: s.categories.filter((x) => x.id !== id) });
+}
