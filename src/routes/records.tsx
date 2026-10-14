@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { EmptyState, PageHeader, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
-import { inr, useStore, type Sale } from "@/lib/store";
+import { CATEGORIES, inr, useStore, type Sale } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { SaleRow } from "./index";
 
@@ -46,6 +46,7 @@ function Records() {
   const [q, setQ] = useState("");
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("All");
   const [types, setTypes] = useState<string[]>(sv === "pending" ? ["Pending"] : []);
+  const [cat, setCat] = useState<string>("All");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [open, setOpen] = useState<Sale | null>(null);
@@ -71,12 +72,15 @@ function Records() {
       const pay = types.filter((t) => !(svc as string[]).includes(t));
       if (svc.length && !(svc as string[]).includes(s.service)) return false;
       if (pay.length && !pay.includes(s.paymentStatus)) return false;
+      if (cat !== "All" && !s.items.some((l) => l.category === cat)) return false;
       if (term && !String(s.billNumber).includes(term) && !s.items.some((l) => l.name.toLowerCase().includes(term))) return false;
       return true;
     });
-  }, [sales, period, from, to, q, types, month]);
+  }, [sales, period, from, to, q, types, month, cat]);
 
   const fTotal = filtered.reduce((a, s) => a + s.total, 0);
+  const pend = filtered.filter((s) => s.paymentStatus === "Pending");
+  const pTotal = pend.reduce((a, s) => a + s.total, 0);
   const chip = (on: boolean) => cn("press shrink-0 rounded-full px-3.5 py-2 text-sm font-bold", on ? "bg-foreground text-background" : "bg-card text-muted-foreground shadow-soft");
 
   if (sales.length === 0)
@@ -133,9 +137,20 @@ function Records() {
             ))}
           </div>
 
+          <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
+            {["All", ...CATEGORIES].map((c) => (
+              <button key={c} onClick={() => setCat(c)} className={cn("press shrink-0 rounded-full border-2 px-3 py-1.5 text-xs font-bold", cat === c ? "border-primary bg-primary/10" : "border-border text-muted-foreground")}>{c === "All" ? "All Categories" : c}</button>
+            ))}
+          </div>
+
           <div className="mb-3 flex justify-between rounded-2xl bg-secondary px-4 py-3 text-sm">
             <span><b>{filtered.length}</b> transactions</span><span className="font-black">{inr(fTotal)}</span>
           </div>
+          {pend.length > 0 && (
+            <div className="mb-3 flex justify-between rounded-2xl bg-warning/20 px-4 py-3 text-sm">
+              <span><b>{pend.length}</b> pending payment{pend.length === 1 ? "" : "s"}</span><span className="font-black">{inr(pTotal)}</span>
+            </div>
+          )}
 
           {filtered.length === 0 ? (
             <p className="text-center text-muted-foreground py-10">No records match these filters.</p>
