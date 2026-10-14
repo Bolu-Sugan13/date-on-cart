@@ -39,7 +39,7 @@ function BillPage() {
 
   const allCats = useStore((st) => st.categories);
   const cats = useMemo(() => allCats.filter((c) => !c.archived).map((c) => c.name), [allCats]);
-  const filtered = useMemo(() => items.filter((i) => (cat === "All" || i.category === cat) && i.name.toLowerCase().includes(q.toLowerCase())), [items, q, cat]);
+  const filtered = useMemo(() => items.filter((i) => cats.includes(i.category) && (cat === "All" || i.category === cat) && i.name.toLowerCase().includes(q.toLowerCase())), [items, q, cat, cats]);
   const total = lines.reduce((a, l) => a + l.subtotal, 0);
   const count = lines.reduce((a, l) => a + l.qty, 0);
 

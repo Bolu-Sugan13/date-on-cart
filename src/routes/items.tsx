@@ -6,8 +6,9 @@ import { EmptyState, PageHeader } from "@/components/AppShell";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { CATEGORIES, deleteItem, inr, saveItem, toggleItem, uid, useStore, type Category, type Item } from "@/lib/store";
+import { normName, saveCategory, deleteItem, inr, saveItem, toggleItem, uid, useStore, type Category, type Item } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { CategoryManager } from "@/components/CategoryManager";
 
 export const Route = createFileRoute("/items")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/items")({
 
 function ItemsPage() {
   const items = useStore((s) => s.items);
+  const cats = useStore((s) => s.categories).filter((c) => !c.archived).map((c) => c.name);
   const [editing, setEditing] = useState<Item | "new" | null>(null);
   const [del, setDel] = useState<Item | null>(null);
   const [cat, setCat] = useState<Category | "All">("All");
@@ -30,19 +32,20 @@ function ItemsPage() {
 
   const addBtn = (
     <button onClick={() => setEditing("new")} className="press flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-3 font-bold text-primary-foreground shadow-soft">
-      <Plus className="size-5" /> Add Dessert
+      <Plus className="size-5" /> Add Item
     </button>
   );
 
   return (
     <div>
+      <CategoryManager />
       <PageHeader title="Your Items" subtitle={`${items.length} item${items.length === 1 ? "" : "s"}`} action={items.length > 0 && addBtn} />
       {items.length === 0 ? (
         <EmptyState icon="🍮" title="No items added yet." text="Add your first item to start billing." action={addBtn} />
       ) : (
         <>
         <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
-          {(["All", ...CATEGORIES] as const).map((c) => (
+          {["All", ...cats].map((c) => (
             <button key={c} onClick={() => setCat(c)} className={cn("press shrink-0 rounded-full px-3.5 py-2 text-sm font-bold", cat === c ? "bg-foreground text-background" : "bg-card text-muted-foreground shadow-soft")}>
               {c} <span className="opacity-60">{c === "All" ? items.length : items.filter((i) => i.category === c).length}</span>
             </button>
@@ -92,7 +95,7 @@ function ItemsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (del) { deleteItem(del.id); toast.success("Dessert deleted"); } }}>
+            <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (del) { deleteItem(del.id); toast.success("Item deleted"); } }}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -116,7 +119,9 @@ function ItemForm({ item, onClose }: { item: Item | "new" | null; onClose: () =>
 
 function FormBody({ item, onClose }: { item: Item | null; onClose: () => void }) {
   const [name, setName] = useState(item?.name ?? "");
-  const [category, setCategory] = useState<Category>(item?.category ?? "Desserts");
+  const activeCats = useStore((s) => s.categories).filter((c) => !c.archived).map((c) => c.name);
+  const [category, setCategory] = useState<Category>(item?.category ?? activeCats[0] ?? "");
+  const [newCat, setNewCat] = useState("");
   const [description, setDescription] = useState(item?.description ?? "");
   const [hasSizes, setHasSizes] = useState(item?.hasSizes ?? false);
   const [single, setSingle] = useState(item && !item.hasSizes ? String(item.sizes[0]?.price ?? "") : "");
@@ -126,7 +131,8 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
 
   const save = (): void => {
     const n = name.trim();
-    if (!n) { toast.error("Enter a dessert name"); return; }
+    if (!n) { toast.error("Enter an item name"); return; }
+    if (!category) { toast.error("Choose a category"); return; }
     let sizes;
     if (hasSizes) {
       const valid = rows.filter((r) => r.name.trim() || r.price);
@@ -141,7 +147,7 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
       sizes = [{ id: item?.sizes[0]?.id ?? uid(), name: "", price: Number(single) }];
     }
     saveItem({ id: item?.id ?? uid(), category, description: description.trim(), name: n, hasSizes, enabled: item?.enabled ?? true, sizes, createdAt: item?.createdAt });
-    toast.success(item ? "Dessert updated" : "Dessert added");
+    toast.success(item ? "Item updated" : "Item added");
     onClose();
   };
 
@@ -149,15 +155,19 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
 
   return (
     <>
-      <DialogHeader><DialogTitle className="text-xl font-extrabold">{item ? "Edit Dessert" : "Add Dessert"}</DialogTitle></DialogHeader>
-      <label className="text-sm font-bold">Dessert Name</label>
+      <DialogHeader><DialogTitle className="text-xl font-extrabold">{item ? "Edit Item" : "Add Item"}</DialogTitle></DialogHeader>
+      <label className="text-sm font-bold">Item Name</label>
       <input autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={60} className={input} placeholder="e.g. Chocolate Brownie" />
 
       <label className="text-sm font-bold">Category</label>
       <div className="grid grid-cols-3 gap-2">
-        {CATEGORIES.map((c) => (
+        {activeCats.map((c) => (
           <button key={c} onClick={() => setCategory(c)} className={cn("press rounded-xl px-2 py-2.5 text-sm font-bold", category === c ? "bg-primary text-primary-foreground shadow-soft" : "bg-secondary text-muted-foreground")}>{c}</button>
         ))}
+      </div>
+      <div className="flex gap-2">
+        <input value={newCat} onChange={(e) => setNewCat(e.target.value)} maxLength={40} className={input} placeholder="New category name" />
+        <button onClick={() => { const err = saveCategory({ name: newCat, description: "" }); if (err) toast.error(err); else { setCategory(normName(newCat)); setNewCat(""); toast.success("Category added"); } }} className="press shrink-0 rounded-xl bg-secondary px-4 font-bold">+ Add</button>
       </div>
       <label className="text-sm font-bold">Description <span className="font-normal text-muted-foreground">(optional)</span></label>
       <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={150} rows={2} className={input} placeholder="e.g. Rich chocolate with walnuts" />
