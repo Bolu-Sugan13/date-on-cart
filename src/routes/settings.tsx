@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/AppShell";
 import { getSheetsStatus } from "@/lib/sheets.functions";
@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Dessert Cart" },
+      { title: "Settings — Date Café" },
       { name: "description", content: "Business name, spreadsheet connection and sync status." },
-      { property: "og:title", content: "Settings — Dessert Cart" },
+      { property: "og:title", content: "Settings — Date Café" },
       { property: "og:description", content: "Business name, spreadsheet connection and sync status." },
     ],
   }),
@@ -51,12 +51,44 @@ function SettingsPage() {
     else toast("Everything is already synced");
   };
 
+  const [prompt, setPrompt] = useState<{ prompt: () => Promise<void> } | null>(null);
+  const [installed, setInstalled] = useState(false);
+  useEffect(() => {
+    setInstalled(window.matchMedia("(display-mode: standalone)").matches);
+    const h = (e: Event) => { e.preventDefault(); setPrompt(e as unknown as { prompt: () => Promise<void> }); };
+    window.addEventListener("beforeinstallprompt", h);
+    return () => window.removeEventListener("beforeinstallprompt", h);
+  }, []);
+
   const card = "rounded-3xl bg-card p-5 shadow-soft space-y-3";
   const input = "w-full rounded-xl bg-secondary px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-ring";
 
   return (
     <div className="space-y-4 max-w-2xl">
       <PageHeader title="Settings" />
+
+      <section className={card}>
+        <div className="flex items-center gap-3">
+          <img src="/icon-192.png" alt="Date logo" width={56} height={56} className="rounded-full" />
+          <div><h2 className="text-xl">Date Café Billing</h2><p className="text-xs text-muted-foreground">Desserts & Coffee · White Town · Estd 2026</p></div>
+        </div>
+      </section>
+
+      <section className={card}>
+        <h2 className="font-extrabold">Install on your phone</h2>
+        {installed ? (
+          <p className="text-sm text-success font-bold">You're using the installed app.</p>
+        ) : prompt ? (
+          <button onClick={() => void prompt.prompt()} className="press w-full rounded-2xl bg-primary py-3.5 font-extrabold text-primary-foreground">Install App</button>
+        ) : null}
+        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>Open the published app link in <b>Chrome</b> on your Android phone.</li>
+          <li>Tap the <b>⋮</b> menu at the top right.</li>
+          <li>Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>.</li>
+          <li>Open <b>Date Café</b> from your home screen.</li>
+        </ol>
+        <p className="text-xs text-muted-foreground">On iPhone: open in Safari, tap Share, then "Add to Home Screen".</p>
+      </section>
 
       <section className={card}>
         <label className="text-sm font-bold">Business Name</label>

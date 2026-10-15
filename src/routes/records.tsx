@@ -13,9 +13,9 @@ export const Route = createFileRoute("/records")({
   validateSearch: z.object({ bill: z.number().optional(), view: z.enum(["pending"]).optional() }),
   head: () => ({
     meta: [
-      { title: "Sales Records — Dessert Cart" },
+      { title: "Sales Records — Date Café" },
       { name: "description", content: "Search, filter and review every sale, grouped by month." },
-      { property: "og:title", content: "Sales Records — Dessert Cart" },
+      { property: "og:title", content: "Sales Records — Date Café" },
       { property: "og:description", content: "Search, filter and review every sale, grouped by month." },
     ],
   }),

@@ -9,9 +9,9 @@ import { inr, useStore, type Sale } from "@/lib/store";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Dessert Cart" },
+      { title: "Dashboard — Date Café" },
       { name: "description", content: "Today's sales, orders and recent transactions for your dessert cart." },
-      { property: "og:title", content: "Dashboard — Dessert Cart" },
+      { property: "og:title", content: "Dashboard — Date Café" },
       { property: "og:description", content: "Today's sales, orders and recent transactions for your dessert cart." },
     ],
   }),

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BillRouteImport } from './routes/bill'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as PendingRouteImport } from './routes/pending'
 import { Route as RecordsRouteImport } from './routes/records'
 import { Route as SettingsRouteImport } from './routes/settings'
 
@@ -30,6 +31,11 @@ const ItemsRoute = ItemsRouteImport.update({
   path: '/items',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PendingRoute = PendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordsRoute = RecordsRouteImport.update({
   id: '/records',
   path: '/records',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
+  '/pending': typeof PendingRoute
   '/records': typeof RecordsRoute
   '/settings': typeof SettingsRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
+  '/pending': typeof PendingRoute
   '/records': typeof RecordsRoute
   '/settings': typeof SettingsRoute
 }
@@ -60,21 +68,30 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/bill': typeof BillRoute
   '/items': typeof ItemsRoute
+  '/pending': typeof PendingRoute
   '/records': typeof RecordsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/bill' | '/items' | '/records' | '/settings'
+  fullPaths: '/' | '/bill' | '/items' | '/pending' | '/records' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/bill' | '/items' | '/records' | '/settings'
-  id: '__root__' | '/' | '/bill' | '/items' | '/records' | '/settings'
+  to: '/' | '/bill' | '/items' | '/pending' | '/records' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/bill'
+    | '/items'
+    | '/pending'
+    | '/records'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BillRoute: typeof BillRoute
   ItemsRoute: typeof ItemsRoute
+  PendingRoute: typeof PendingRoute
   RecordsRoute: typeof RecordsRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -102,6 +119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ItemsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pending': {
+      id: '/pending'
+      path: '/pending'
+      fullPath: '/pending'
+      preLoaderRoute: typeof PendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/records': {
       id: '/records'
       path: '/records'
@@ -123,6 +147,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BillRoute: BillRoute,
   ItemsRoute: ItemsRoute,
+  PendingRoute: PendingRoute,
   RecordsRoute: RecordsRoute,
   SettingsRoute: SettingsRoute,
 }

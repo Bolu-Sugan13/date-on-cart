@@ -13,9 +13,9 @@ import { CategoryManager } from "@/components/CategoryManager";
 export const Route = createFileRoute("/items")({
   head: () => ({
     meta: [
-      { title: "Your Desserts — Dessert Cart" },
+      { title: "Your Items — Date Café" },
       { name: "description", content: "Add and manage your desserts, sizes and prices." },
-      { property: "og:title", content: "Your Desserts — Dessert Cart" },
+      { property: "og:title", content: "Your Items — Date Café" },
       { property: "og:description", content: "Add and manage your desserts, sizes and prices." },
     ],
   }),

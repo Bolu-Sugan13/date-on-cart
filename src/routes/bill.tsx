@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/bill")({
   head: () => ({
     meta: [
-      { title: "New Bill — Dessert Cart" },
+      { title: "New Bill — Date Café" },
       { name: "description", content: "Create a new bill quickly from your phone." },
-      { property: "og:title", content: "New Bill — Dessert Cart" },
+      { property: "og:title", content: "New Bill — Date Café" },
       { property: "og:description", content: "Create a new bill quickly from your phone." },
     ],
   }),
