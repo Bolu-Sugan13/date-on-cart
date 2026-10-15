@@ -91,7 +91,7 @@ function CatForm({ cat, onClose }: { cat: CategoryRec | null; onClose: () => voi
   const input = "w-full rounded-xl bg-secondary px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-ring";
   const save = () => {
     const err = saveCategory({ id: cat?.id, name, description: desc });
-    if (err) return toast.error(err);
+    if (err) { toast.error(err); return; }
     toast.success(cat ? "Category updated" : "Category added");
     onClose();
   };
