@@ -29,22 +29,41 @@ export type SaleLine = {
   price: number; // snapshot
   subtotal: number;
 };
+export type DiscountType = "None" | "Fixed" | "Percentage";
 export type Sale = {
   id: string;
   billNumber: number;
   createdAt: string;
   updatedAt: string;
   service: Service;
+  customerName?: string | undefined;
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod | undefined;
   paymentNote?: string | undefined;
   paymentUpdatedAt?: string | undefined;
-  total: number;
+  subtotal: number;
+  discountType: DiscountType;
+  discountValue: number;
+  discountAmount: number;
+  total: number; // final bill total after discount
   syncStatus: SyncStatus;
   syncError?: string | undefined;
   lastSyncedAt?: string | undefined;
   items: SaleLine[];
 };
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+/** Validates a discount and returns the amounts, or an error message. */
+export function calcDiscount(subtotal: number, type: DiscountType, value: number):
+  { ok: true; discountAmount: number; total: number } | { ok: false; error: string } {
+  if (type === "None") return { ok: true, discountAmount: 0, total: r2(subtotal) };
+  if (!Number.isFinite(value) || value < 0) return { ok: false, error: "Discount can't be negative" };
+  if (type === "Percentage" && value > 100) return { ok: false, error: "Percentage can't be more than 100%" };
+  const amt = r2(type === "Fixed" ? value : (subtotal * value) / 100);
+  if (amt > subtotal) return { ok: false, error: "Discount can't be more than the subtotal" };
+  return { ok: true, discountAmount: amt, total: r2(subtotal - amt) };
+}
+export const customerLabel = (s: Pick<Sale, "customerName">) => s.customerName?.trim() || "Walk-in Customer";
 export type Settings = { businessName: string; nextBill: number; spreadsheetId: string };
 export type State = { categories: CategoryRec[]; items: Item[]; sales: Sale[]; settings: Settings };
 
@@ -69,10 +88,17 @@ function migrate(p: State): State {
   })) as Item[];
   const sales = (p.sales ?? []).map((raw) => {
     const s = raw as Sale & { payment?: string };
-    if (s.paymentStatus) return { ...s, updatedAt: s.updatedAt ?? s.createdAt };
+    const disc = {
+      subtotal: s.subtotal ?? s.total,
+      discountType: s.discountType ?? ("None" as const),
+      discountValue: s.discountValue ?? 0,
+      discountAmount: s.discountAmount ?? 0,
+    };
+    if (s.paymentStatus) return { ...s, ...disc, updatedAt: s.updatedAt ?? s.createdAt };
     const { payment, ...rest } = s;
     return {
       ...rest,
+      ...disc,
       updatedAt: s.createdAt,
       paymentStatus: "Paid" as const,
       paymentMethod: payment as PaymentMethod | undefined,
@@ -152,21 +178,29 @@ export function toggleItem(id: string) {
 
 // Sales
 export function createSale(
-  data: Pick<Sale, "service" | "paymentStatus" | "paymentMethod" | "paymentNote" | "items">,
+  data: Pick<Sale, "service" | "paymentStatus" | "paymentMethod" | "paymentNote" | "items" | "customerName" | "discountType" | "discountValue">,
 ): Sale {
   const s = getState();
   const now = new Date().toISOString();
+  const subtotal = data.items.reduce((a, l) => a + l.subtotal, 0);
+  const d = calcDiscount(subtotal, data.discountType, data.discountValue);
+  if (!d.ok) throw new Error(d.error);
   const sale: Sale = {
     id: uid(),
     billNumber: s.settings.nextBill,
     createdAt: now,
     updatedAt: now,
     service: data.service,
+    customerName: data.customerName?.trim() || undefined,
     paymentStatus: data.paymentStatus,
     paymentMethod: data.paymentMethod,
     paymentNote: data.paymentStatus === "Other" ? data.paymentNote : undefined,
     items: data.items,
-    total: data.items.reduce((a, l) => a + l.subtotal, 0),
+    subtotal,
+    discountType: data.discountType,
+    discountValue: data.discountType === "None" ? 0 : data.discountValue,
+    discountAmount: d.discountAmount,
+    total: d.total,
     syncStatus: "PENDING",
   };
   set({
