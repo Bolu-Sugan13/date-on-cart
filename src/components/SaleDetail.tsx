@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { inr, updatePayment, useStore, type PaymentStatus, type Sale } from "@/lib/store";
+import { customerLabel, inr, updatePayment, useStore, type PaymentStatus, type Sale } from "@/lib/store";
 import { syncPending } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { PaymentBadge, SyncBadge } from "./AppShell";
@@ -33,6 +33,7 @@ function Body({ sale, onClose }: { sale: Sale; onClose: () => void }) {
   };
 
   const rows: [string, string][] = [
+    ["Customer", customerLabel(sale)],
     ["Date", format(new Date(sale.createdAt), "d MMMM yyyy")],
     ["Time", format(new Date(sale.createdAt), "hh:mm a")],
     ["Service", sale.service],
@@ -73,8 +74,12 @@ function Body({ sale, onClose }: { sale: Sale; onClose: () => void }) {
           </div>
         ))}
       </div>
+      <div className="flex justify-between border-t pt-3 text-sm"><span>Subtotal</span><b>{inr(sale.subtotal)}</b></div>
+      {sale.discountAmount > 0 && (
+        <div className="flex justify-between text-sm"><span>Discount{sale.discountType === "Percentage" ? ` (${sale.discountValue}%)` : ""}</span><b>− {inr(sale.discountAmount)}</b></div>
+      )}
       <div className="flex justify-between border-t pt-3 text-lg font-extrabold">
-        <span>TOTAL</span>
+        <span>FINAL TOTAL</span>
         <span>{inr(sale.total)}</span>
       </div>
       {sale.syncError && sale.syncStatus === "FAILED" && (

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { calcDiscount } from "./store";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_sheets/v4";
 const SALES = "Sales";
@@ -8,6 +9,7 @@ const HEADER = [
   "Bill Number", "Transaction Date", "Transaction Time", "Category", "Item Name", "Size", "Quantity",
   "Unit Price", "Item Subtotal", "Order Total", "Service Type", "Payment Status", "Payment Method",
   "Payment Note", "Payment Status Updated At", "Last Synced At",
+  "Customer Name", "Subtotal", "Discount Type", "Discount Value", "Discount Amount", "Final Bill Total",
 ];
 const SUMMARY_HEADER = [
   "Month", "Total Sales", "Number of Transactions", "Paid Amount", "Pending Amount", "Number of Pending Transactions",
@@ -50,10 +52,20 @@ export const upsertSaleRows = createServerFn({ method: "POST" })
     z.object({
       spreadsheetId: idSchema,
       billNumber: z.number().int(),
-      rows: z.array(z.array(cell).max(16)).min(1).max(200),
+      rows: z.array(z.array(cell).max(22)).min(1).max(200),
+      check: z.object({
+        subtotal: z.number(), discountType: z.enum(["None", "Fixed", "Percentage"]), discountValue: z.number(),
+        discountAmount: z.number(), total: z.number(), lineSum: z.number(),
+      }),
     }).parse(d),
   )
   .handler(async ({ data }) => {
+    const c = data.check;
+    const d = calcDiscount(c.subtotal, c.discountType, c.discountValue);
+    if (Math.abs(c.lineSum - c.subtotal) > 0.01) throw new Error("Subtotal doesn't match the items");
+    if (!d.ok) throw new Error(d.error);
+    if (Math.abs(d.discountAmount - c.discountAmount) > 0.01 || Math.abs(d.total - c.total) > 0.01)
+      throw new Error("Discount or final total is calculated wrongly");
     const call = client(data.spreadsheetId);
     await ensureSheet(call, SALES, HEADER);
     const col = await call<{ values?: unknown[][] }>(`/values/${q(SALES)}!A:A`);
@@ -65,16 +77,16 @@ export const upsertSaleRows = createServerFn({ method: "POST" })
     const extra: unknown[][] = [];
     data.rows.forEach((row, i) => {
       const at = existing[i];
-      if (at) updates.push({ range: `'${SALES}'!A${at}:P${at}`, values: [row] });
+      if (at) updates.push({ range: `'${SALES}'!A${at}:V${at}`, values: [row] });
       else extra.push(row);
     });
     // Blank leftover rows if the sale now has fewer lines.
-    existing.slice(data.rows.length).forEach((at) => updates.push({ range: `'${SALES}'!A${at}:P${at}`, values: [Array(16).fill("")] }));
+    existing.slice(data.rows.length).forEach((at) => updates.push({ range: `'${SALES}'!A${at}:V${at}`, values: [Array(22).fill("")] }));
 
     if (updates.length)
       await call("/values:batchUpdate", { method: "POST", body: JSON.stringify({ valueInputOption: "USER_ENTERED", data: updates }) });
     if (extra.length)
-      await call(`/values/${q(SALES)}!A:P:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, {
+      await call(`/values/${q(SALES)}!A:V:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, {
         method: "POST", body: JSON.stringify({ values: extra }),
       });
     return { ok: true };

@@ -74,7 +74,7 @@ function Records() {
       if (svc.length && !(svc as string[]).includes(s.service)) return false;
       if (pay.length && !pay.includes(s.paymentStatus)) return false;
       if (cat !== "All" && !s.items.some((l) => l.category === cat)) return false;
-      if (term && !String(s.billNumber).includes(term) && !s.items.some((l) => l.name.toLowerCase().includes(term))) return false;
+      if (term && !String(s.billNumber).includes(term) && !(s.customerName ?? "walk-in customer").toLowerCase().includes(term) && !s.items.some((l) => l.name.toLowerCase().includes(term))) return false;
       return true;
     });
   }, [sales, period, from, to, q, types, month, cat]);
@@ -119,7 +119,7 @@ function Records() {
         <>
           <div className="relative mb-3">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search bill number or item..." className="w-full rounded-2xl bg-card py-3.5 pl-12 pr-4 font-semibold shadow-soft outline-none focus:ring-2 focus:ring-ring" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search bill, customer or item..." className="w-full rounded-2xl bg-card py-3.5 pl-12 pr-4 font-semibold shadow-soft outline-none focus:ring-2 focus:ring-ring" />
           </div>
           {!month && (
             <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
@@ -161,7 +161,7 @@ function Records() {
               <div className="hidden md:block overflow-hidden rounded-3xl bg-card shadow-soft">
                 <table className="w-full text-sm">
                   <thead className="bg-secondary text-left text-xs text-cocoa">
-                    <tr>{["Bill No", "Date", "Time", "Service", "Payment Status", "Sync", "Total"].map((h) => <th key={h} className={cn("px-4 py-3 font-bold", h === "Total" && "text-right")}>{h}</th>)}</tr>
+                    <tr>{["Bill No", "Customer", "Date", "Time", "Service", "Payment Status", "Sync", "Total"].map((h) => <th key={h} className={cn("px-4 py-3 font-bold", h === "Total" && "text-right")}>{h}</th>)}</tr>
                   </thead>
                   <tbody className="divide-y">
                     {filtered.map((s) => {
@@ -169,6 +169,7 @@ function Records() {
                       return (
                         <tr key={s.id} onClick={() => setOpen(s)} className="cursor-pointer hover:bg-secondary/50">
                           <td className="px-4 py-3 font-bold">#{s.billNumber}</td>
+                          <td className="px-4 py-3">{customerLabel(s)}</td>
                           <td className="px-4 py-3">{format(d, "d MMM yyyy")}</td>
                           <td className="px-4 py-3">{format(d, "hh:mm a")}</td>
                           <td className="px-4 py-3">{s.service}</td>

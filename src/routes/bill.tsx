@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { EmptyState, PageHeader } from "@/components/AppShell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusPicker } from "@/components/SaleDetail";
-import { createSale, inr, useStore, type Category, type Item, type PaymentMethod, type PaymentStatus, type Sale, type SaleLine, type Service, type Size } from "@/lib/store";
+import { calcDiscount, createSale, inr, type DiscountType, useStore, type Category, type Item, type PaymentMethod, type PaymentStatus, type Sale, type SaleLine, type Service, type Size } from "@/lib/store";
 import { syncPending } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,9 @@ function BillPage() {
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
   const [status, setStatus] = useState<PaymentStatus | null>(null);
   const [note, setNote] = useState("");
+  const [customer, setCustomer] = useState("");
+  const [dType, setDType] = useState<DiscountType>("None");
+  const [dValue, setDValue] = useState("");
   const [cat, setCat] = useState<Category | "All">("All");
   const [review, setReview] = useState(false);
   const [done, setDone] = useState<Sale | null>(null);
@@ -40,7 +43,9 @@ function BillPage() {
   const allCats = useStore((st) => st.categories);
   const cats = useMemo(() => allCats.filter((c) => !c.archived).map((c) => c.name), [allCats]);
   const filtered = useMemo(() => items.filter((i) => cats.includes(i.category) && (cat === "All" || i.category === cat) && i.name.toLowerCase().includes(q.toLowerCase())), [items, q, cat, cats]);
-  const total = lines.reduce((a, l) => a + l.subtotal, 0);
+  const subtotal = lines.reduce((a, l) => a + l.subtotal, 0);
+  const disc = calcDiscount(subtotal, dType, Number(dValue || 0));
+  const total = disc.ok ? disc.total : subtotal;
   const count = lines.reduce((a, l) => a + l.qty, 0);
 
   const addLine = (item: Item, size: Size, qty: number) => {
@@ -59,13 +64,15 @@ function BillPage() {
     if (!lines.length) return;
     if (!status) { toast.error("Choose a payment status"); return; }
     if (status === "Other" && !note.trim()) { toast.error("Enter a payment note"); return; }
-    const sale = createSale({ service, paymentStatus: status, paymentMethod: payment ?? undefined, paymentNote: note.trim() || undefined, items: lines.map(({ key: _k, ...l }) => l) });
+    if (!disc.ok) { toast.error(disc.error); return; }
+    const sale = createSale({ customerName: customer, discountType: dType, discountValue: Number(dValue || 0), service, paymentStatus: status, paymentMethod: payment ?? undefined, paymentNote: note.trim() || undefined, items: lines.map(({ key: _k, ...l }) => l) });
     setReview(false);
     setDone(sale);
     setLines([]);
     setPayment(null);
     setStatus(null);
     setNote("");
+    setCustomer(""); setDType("None"); setDValue("");
     void syncPending();
   };
 
@@ -155,7 +162,24 @@ function BillPage() {
       <Dialog open={review} onOpenChange={setReview}>
         <DialogContent className="rounded-3xl max-w-md max-h-[92vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="text-xl font-extrabold">Order Summary</DialogTitle></DialogHeader>
-          <OrderBody lines={lines} total={total} changeQty={changeQty} hideTitle />
+          <OrderBody lines={lines} total={subtotal} changeQty={changeQty} hideTitle label="SUBTOTAL" />
+          <div className="text-xs font-bold text-muted-foreground">CUSTOMER NAME (OPTIONAL)</div>
+          <input value={customer} onChange={(e) => setCustomer(e.target.value)} maxLength={80} placeholder="Walk-in Customer" className="w-full rounded-xl bg-secondary px-3 py-3 font-semibold outline-none focus:ring-2 focus:ring-ring" />
+          <div className="text-xs font-bold text-muted-foreground">DISCOUNT</div>
+          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-secondary p-1">
+            {([["None", "No Discount"], ["Fixed", "₹ Amount"], ["Percentage", "% Off"]] as [DiscountType, string][]).map(([t, l]) => (
+              <button key={t} onClick={() => { setDType(t); if (t === "None") setDValue(""); }} className={cn("press rounded-xl py-2.5 text-sm font-bold", dType === t ? "bg-card shadow-soft" : "text-muted-foreground")}>{l}</button>
+            ))}
+          </div>
+          {dType !== "None" && (
+            <input type="number" inputMode="decimal" min={0} max={dType === "Percentage" ? 100 : subtotal} value={dValue} onChange={(e) => setDValue(e.target.value)} placeholder={dType === "Fixed" ? "e.g. 100" : "e.g. 10"} className="w-full rounded-xl bg-secondary px-3 py-3 font-semibold outline-none focus:ring-2 focus:ring-ring" />
+          )}
+          {!disc.ok && <p className="text-sm font-semibold text-destructive">{disc.error}</p>}
+          <div className="space-y-1 rounded-2xl bg-secondary p-4 text-sm">
+            <div className="flex justify-between"><span>Subtotal</span><b>{inr(subtotal)}</b></div>
+            <div className="flex justify-between"><span>Discount{dType === "Percentage" && dValue ? ` (${dValue}%)` : ""}</span><b>− {inr(disc.ok ? disc.discountAmount : 0)}</b></div>
+            <div className="flex justify-between border-t pt-1 text-lg font-black"><span>Final Total</span><span>{inr(total)}</span></div>
+          </div>
           <div className="text-xs font-bold text-muted-foreground">SERVICE TYPE</div>
           <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
             {(["Dine In", "Take Away"] as Service[]).map((s) => (
@@ -182,7 +206,7 @@ function BillPage() {
             <span>Service <b className="block text-base">{service}</b></span>
             <span className="text-right">Payment <b className="block text-base">{status ?? "—"}</b></span>
           </div>
-          <button onClick={save} disabled={!lines.length} className="press w-full rounded-2xl bg-primary py-4 text-lg font-black text-primary-foreground shadow-lift disabled:opacity-40">
+          <button onClick={save} disabled={!lines.length || !disc.ok} className="press w-full rounded-2xl bg-primary py-4 text-lg font-black text-primary-foreground shadow-lift disabled:opacity-40">
             SAVE RECORD · {inr(total)}
           </button>
         </DialogContent>
@@ -191,7 +215,7 @@ function BillPage() {
   );
 }
 
-function OrderBody({ lines, total, changeQty, hideTitle }: { lines: Line[]; total: number; changeQty: (k: string, d: number) => void; hideTitle?: boolean }) {
+function OrderBody({ lines, total, changeQty, hideTitle, label = "TOTAL" }: { lines: Line[]; total: number; changeQty: (k: string, d: number) => void; hideTitle?: boolean; label?: string }) {
   return (
     <div>
       {!hideTitle && <div className="text-xs font-bold text-muted-foreground mb-2">CURRENT ORDER</div>}
@@ -218,7 +242,7 @@ function OrderBody({ lines, total, changeQty, hideTitle }: { lines: Line[]; tota
         </div>
       )}
       <div className="mt-2 flex justify-between border-t-2 border-dashed pt-3 text-xl font-black">
-        <span>TOTAL</span><span>{inr(total)}</span>
+        <span>{label}</span><span>{inr(total)}</span>
       </div>
     </div>
   );
