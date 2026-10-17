@@ -4,7 +4,7 @@ import { Plus, ShoppingBag, Utensils } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
-import { inr, useStore, type Sale } from "@/lib/store";
+import { customerLabel, inr, useStore, type Sale } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -107,7 +107,7 @@ export function SaleRow({ sale, onClick }: { sale: Sale; onClick: () => void }) 
       <div className="flex-1 min-w-0">
         <div className="font-bold flex items-center gap-2">#{sale.billNumber} <PaymentBadge status={sale.paymentStatus} /> <SyncBadge status={sale.syncStatus} /></div>
         <div className="text-xs text-muted-foreground">
-          {format(new Date(sale.createdAt), "d MMM, hh:mm a")} · {sale.service}{sale.paymentMethod ? ` · ${sale.paymentMethod}` : ""}
+          {customerLabel(sale)} · {format(new Date(sale.createdAt), "d MMM, hh:mm a")} · {sale.service}{sale.paymentMethod ? ` · ${sale.paymentMethod}` : ""}
         </div>
       </div>
       <div className="text-lg font-black">{inr(sale.total)}</div>

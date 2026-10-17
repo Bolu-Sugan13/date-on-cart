@@ -11,6 +11,7 @@ function toRows(s: Sale) {
     s.billNumber, format(d, "dd/MM/yyyy"), format(d, "hh:mm a"), l.category || "-", l.name, l.size || "-",
     l.qty, l.price, l.subtotal, s.total, s.service, s.paymentStatus, s.paymentMethod ?? "",
     s.paymentNote ?? "", stamp(s.paymentUpdatedAt), synced,
+    s.customerName || "Walk-in Customer", s.subtotal, s.discountType, s.discountValue, s.discountAmount, s.total,
   ]);
 }
 
@@ -41,7 +42,7 @@ export async function syncPending(): Promise<{ synced: number; failed: number; s
   try {
     for (const s of pending) {
       try {
-        await upsertSaleRows({ data: { spreadsheetId: settings.spreadsheetId, billNumber: s.billNumber, rows: toRows(s) } });
+        await upsertSaleRows({ data: { spreadsheetId: settings.spreadsheetId, billNumber: s.billNumber, rows: toRows(s), check: { subtotal: s.subtotal, discountType: s.discountType, discountValue: s.discountValue, discountAmount: s.discountAmount, total: s.total, lineSum: s.items.reduce((a, l) => a + l.subtotal, 0) } } });
         updateSaleSync(s.id, "SYNCED");
         synced++;
       } catch (e) {
