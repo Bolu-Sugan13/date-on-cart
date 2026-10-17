@@ -4,7 +4,7 @@ import { Plus, ShoppingBag, Utensils } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
-import { inr, useStore, type Sale } from "@/lib/store";
+import { customerLabel, inr, useStore, type Sale } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({

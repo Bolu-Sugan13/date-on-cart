@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { EmptyState, PageHeader, PaymentBadge, SyncBadge } from "@/components/AppShell";
 import { SaleDetail } from "@/components/SaleDetail";
-import { inr, useStore, type Sale } from "@/lib/store";
+import { customerLabel, inr, useStore, type Sale } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { SaleRow } from "./index";
 
