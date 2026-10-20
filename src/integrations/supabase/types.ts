@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      billing_backups: {
+        Row: {
+          revision: number
+          state: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          revision?: number
+          state?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          revision?: number
+          state?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      billing_sheet_access: {
+        Row: {
+          spreadsheet_id: string
+          user_id: string
+        }
+        Insert: {
+          spreadsheet_id: string
+          user_id: string
+        }
+        Update: {
+          spreadsheet_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

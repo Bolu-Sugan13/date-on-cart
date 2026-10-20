@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792472185601,
+      "tag": "0000_private_billing_backups",
+      "breakpoints": true
+    }
+  ]
 }
