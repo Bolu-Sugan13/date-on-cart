@@ -1,0 +1,12 @@
+CREATE TABLE public.billing_backups (user_id uuid PRIMARY KEY, state jsonb NOT NULL DEFAULT '{}'::jsonb, revision integer NOT NULL DEFAULT 1, updated_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT, INSERT, UPDATE ON public.billing_backups TO authenticated;
+GRANT ALL ON public.billing_backups TO service_role;
+ALTER TABLE public.billing_backups ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Read own backup" ON public.billing_backups FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Create own backup" ON public.billing_backups FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Update own backup" ON public.billing_backups FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE TABLE public.billing_sheet_access (spreadsheet_id text PRIMARY KEY, user_id uuid NOT NULL);
+GRANT SELECT ON public.billing_sheet_access TO authenticated;
+GRANT ALL ON public.billing_sheet_access TO service_role;
+ALTER TABLE public.billing_sheet_access ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Read own sheet access" ON public.billing_sheet_access FOR SELECT TO authenticated USING (auth.uid() = user_id);
