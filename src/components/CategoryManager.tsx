@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { categoryInUse, deleteCategory, saveCategory, setCategoryArchived, useStore, type CategoryRec } from "@/lib/store";
 import { cn } from "@/lib/utils";
-
 export function CategoryManager() {
   const cats = useStore((s) => s.categories);
   const items = useStore((s) => s.items);
@@ -13,7 +12,6 @@ export function CategoryManager() {
   const [edit, setEdit] = useState<CategoryRec | "new" | null>(null);
   const [del, setDel] = useState<CategoryRec | null>(null);
   const shown = cats.filter((c) => (view === "archived") === c.archived);
-
   return (
     <>
       <div className="mb-4 flex gap-2">
@@ -24,7 +22,6 @@ export function CategoryManager() {
           <Tags className="size-4" /> Manage Categories
         </button>
       </div>
-
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto rounded-3xl">
           <DialogHeader><DialogTitle className="font-display text-2xl">Categories</DialogTitle></DialogHeader>
@@ -53,7 +50,6 @@ export function CategoryManager() {
           </div>
         </DialogContent>
       </Dialog>
-
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
         <DialogContent className="max-w-md rounded-3xl">
           {edit && <CatForm key={edit === "new" ? "new" : edit.id} cat={edit === "new" ? null : edit} onClose={() => setEdit(null)} />}
