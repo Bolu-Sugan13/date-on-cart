@@ -3,7 +3,6 @@ import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState, PageHeader } from "@/components/AppShell";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { normName, saveCategory, deleteItem, inr, saveItem, toggleItem, uid, useStore, type Category, type Item } from "@/lib/store";
@@ -87,20 +86,31 @@ function ItemsPage() {
 
       <ItemForm item={editing} onClose={() => setEditing(null)} />
 
-      <AlertDialog open={!!del} onOpenChange={(o) => !o && setDel(null)}>
-        <AlertDialogContent className="rounded-3xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {del?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>Past sales records stay unchanged. Tip: disable it instead if you may sell it again.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (del) { deleteItem(del.id); toast.success("Item deleted"); } }}>
+      <Dialog open={!!del} onOpenChange={(o) => !o && setDel(null)}>
+        <DialogContent className="rounded-3xl max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete {del?.name}?</DialogTitle>
+            <p className="text-sm text-muted-foreground mt-2">Past sales records stay unchanged. Tip: disable it instead if you may sell it again.</p>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 pt-4">
+            <button onClick={() => setDel(null)} className="press rounded-xl bg-secondary py-3 font-bold text-sm">
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (del) {
+                  deleteItem(del.id);
+                  toast.success("Item deleted");
+                  setDel(null);
+                }
+              }}
+              className="press rounded-xl bg-destructive py-3 font-bold text-sm text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
