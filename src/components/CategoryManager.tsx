@@ -1,7 +1,6 @@
 import { Archive, ArchiveRestore, Pencil, Plus, Tags, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { categoryInUse, deleteCategory, saveCategory, setCategoryArchived, useStore, type CategoryRec } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -61,26 +60,48 @@ export function CategoryManager() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!del} onOpenChange={(o) => !o && setDel(null)}>
-        <AlertDialogContent className="rounded-3xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {del?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={!!del} onOpenChange={(o) => !o && setDel(null)}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Delete {del?.name}?</DialogTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
               {del && categoryInUse(del.name)
                 ? "This category has items or past sales, so it can't be deleted. Archive it instead — it will be hidden from New Bill but your records stay safe."
                 : "This category is empty and will be removed permanently."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            </p>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 pt-4">
+            <button onClick={() => setDel(null)} className="press rounded-xl bg-secondary py-3 text-sm font-bold">
+              Cancel
+            </button>
             {del && categoryInUse(del.name) ? (
-              <AlertDialogAction className="rounded-xl" onClick={() => { setCategoryArchived(del.id, true); toast.success("Category archived"); }}>Archive</AlertDialogAction>
+              <button
+                onClick={() => {
+                  setCategoryArchived(del.id, true);
+                  toast.success("Category archived");
+                  setDel(null);
+                }}
+                className="press rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+              >
+                Archive
+              </button>
             ) : (
-              <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (del) { deleteCategory(del.id); toast.success("Category deleted"); } }}>Delete</AlertDialogAction>
+              <button
+                onClick={() => {
+                  if (del) {
+                    deleteCategory(del.id);
+                    toast.success("Category deleted");
+                    setDel(null);
+                  }
+                }}
+                className="press rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </button>
             )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
