@@ -1,65 +1,127 @@
-import { Archive, ArchiveRestore, Pencil, Plus, Tags, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { categoryInUse, deleteCategory, saveCategory, setCategoryArchived, useStore, type CategoryRec } from "@/lib/store";
+import { deleteCategory, normName, saveCategory, setCategoryArchived, useStore, type Category } from "@/lib/store";
 import { cn } from "@/lib/utils";
+
 export function CategoryManager() {
-  const cats = useStore((s) => s.categories);
+  const categories = useStore((s) => s.categories);
   const items = useStore((s) => s.items);
+  const sales = useStore((s) => s.sales);
+
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"active" | "archived">("active");
-  const [edit, setEdit] = useState<CategoryRec | "new" | null>(null);
-  const [del, setDel] = useState<CategoryRec | null>(null);
-  const shown = cats.filter((c) => (view === "archived") === c.archived);
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [del, setDel] = useState<Category | null>(null);
+
+  const categoryInUse = (catName: string) => {
+    const hasItems = items.some((i) => i.category === catName);
+    const hasSales = sales.some((s) => s.items.some((i) => i.category === catName));
+    return hasItems || hasSales;
+  };
+
+  const handleAdd = () => {
+    const err = saveCategory({ name, description: desc });
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    toast.success("Category created");
+    setName("");
+    setDesc("");
+  };
+
   return (
     <>
-      <div className="mb-4 flex gap-2">
-        <button onClick={() => setEdit("new")} className="press flex items-center gap-1.5 rounded-2xl border bg-card px-4 py-2.5 text-sm font-bold">
-          <Plus className="size-4" /> Add Category
-        </button>
-        <button onClick={() => setOpen(true)} className="press flex items-center gap-1.5 rounded-2xl border bg-card px-4 py-2.5 text-sm font-bold">
-          <Tags className="size-4" /> Manage Categories
+      <div className="mb-4 flex items-center justify-between">
+        <button
+          onClick={() => setOpen(true)}
+          className="press text-xs font-bold text-muted-foreground underline hover:text-foreground"
+        >
+          Manage Categories
         </button>
       </div>
+
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto rounded-3xl">
-          <DialogHeader><DialogTitle className="font-display text-2xl">Categories</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
-            {(["active", "archived"] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)} className={cn("rounded-xl py-2 text-sm font-bold capitalize", view === v ? "bg-card shadow-soft" : "text-muted-foreground")}>
-                {v} ({cats.filter((c) => (v === "archived") === c.archived).length})
+        <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold">Manage Categories</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="rounded-2xl bg-secondary p-3 space-y-2">
+              <p className="text-xs font-bold text-muted-foreground">Add New Category</p>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={40}
+                placeholder="Category name"
+                className="w-full rounded-xl bg-card px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
+              />
+              <input
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+                maxLength={100}
+                placeholder="Description (optional)"
+                className="w-full rounded-xl bg-card px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
+              />
+              <button
+                onClick={handleAdd}
+                className="press w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground shadow-soft"
+              >
+                + Add Category
               </button>
-            ))}
-          </div>
-          {shown.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No {view} categories.</p>}
-          <div className="space-y-2">
-            {shown.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 rounded-2xl border p-3">
-                <div className="min-w-0 flex-1">
-                  <div className="font-bold">{c.name} <span className="text-xs font-semibold text-muted-foreground">· {items.filter((i) => i.category === c.name).length} items</span></div>
-                  {c.description && <div className="truncate text-xs text-muted-foreground">{c.description}</div>}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-muted-foreground">Existing Categories</p>
+              {categories.map((c) => (
+                <div
+                  key={c.id}
+                  className={cn(
+                    "flex items-center justify-between rounded-2xl bg-card p-3 shadow-soft",
+                    c.archived && "opacity-50"
+                  )}
+                >
+                  <div>
+                    <p className="font-extrabold text-sm">{c.name} {c.archived && "(Archived)"}</p>
+                    {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {c.archived ? (
+                      <button
+                        onClick={() => {
+                          setCategoryArchived(c.id, false);
+                          toast.success("Category unarchived");
+                        }}
+                        className="text-xs font-bold text-primary"
+                      >
+                        Unarchive
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setDel(c)}
+                        className="text-destructive p-1"
+                        aria-label="Delete category"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <button aria-label="Edit" onClick={() => setEdit(c)} className="press rounded-lg p-2 hover:bg-secondary"><Pencil className="size-4" /></button>
-                <button aria-label={c.archived ? "Restore" : "Archive"} onClick={() => { setCategoryArchived(c.id, !c.archived); toast.success(c.archived ? "Category restored" : "Category archived"); }} className="press rounded-lg p-2 hover:bg-secondary">
-                  {c.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
-                </button>
-                <button aria-label="Delete" onClick={() => setDel(c)} className="press rounded-lg p-2 text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /></button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
-        <DialogContent className="max-w-md rounded-3xl">
-          {edit && <CatForm key={edit === "new" ? "new" : edit.id} cat={edit === "new" ? null : edit} onClose={() => setEdit(null)} />}
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!del} onOpenChange={(o) => !o && setDel(null)}>
         <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Delete {del?.name}?</DialogTitle>
+            <DialogTitle>
+              {del && categoryInUse(del.name) ? `Archive ${del.name}?` : `Delete ${del?.name}?`}
+            </DialogTitle>
             <p className="mt-2 text-sm text-muted-foreground">
               {del && categoryInUse(del.name)
                 ? "This category has items or past sales, so it can't be deleted. Archive it instead — it will be hidden from New Bill but your records stay safe."
@@ -67,7 +129,10 @@ export function CategoryManager() {
             </p>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2 pt-4">
-            <button onClick={() => setDel(null)} className="press rounded-xl bg-secondary py-3 text-sm font-bold">
+            <button
+              onClick={() => setDel(null)}
+              className="press rounded-xl bg-secondary py-3 text-sm font-bold"
+            >
               Cancel
             </button>
             {del && categoryInUse(del.name) ? (
@@ -98,31 +163,6 @@ export function CategoryManager() {
           </div>
         </DialogContent>
       </Dialog>
-    </>
-  );
-}
-
-function CatForm({ cat, onClose }: { cat: CategoryRec | null; onClose: () => void }) {
-  const [name, setName] = useState(cat?.name ?? "");
-  const [desc, setDesc] = useState(cat?.description ?? "");
-  const input = "w-full rounded-xl bg-secondary px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-ring";
-  const save = () => {
-    const err = saveCategory({ id: cat?.id, name, description: desc });
-    if (err) { toast.error(err); return; }
-    toast.success(cat ? "Category updated" : "Category added");
-    onClose();
-  };
-  return (
-    <>
-      <DialogHeader><DialogTitle className="font-display text-2xl">{cat ? "Edit Category" : "Add Category"}</DialogTitle></DialogHeader>
-      <label className="text-sm font-bold">Category Name</label>
-      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={40} className={input} placeholder="e.g. Iced Tea" />
-      <label className="text-sm font-bold">Description <span className="font-normal text-muted-foreground">(optional)</span></label>
-      <textarea value={desc} onChange={(e) => setDesc(e.target.value)} maxLength={150} rows={2} className={input} />
-      <div className="grid grid-cols-2 gap-2 pt-2">
-        <button onClick={onClose} className="press rounded-xl bg-secondary py-3 font-bold">Cancel</button>
-        <button onClick={save} className="press rounded-xl bg-primary py-3 font-bold text-primary-foreground">Save Category</button>
-      </div>
     </>
   );
 }
