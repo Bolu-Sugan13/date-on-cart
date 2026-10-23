@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { normName, saveCategory, deleteItem, inr, saveItem, toggleItem, uid, useStore, type Category, type Item } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { CategoryManager } from "@/components/CategoryManager";
+
 export const Route = createFileRoute("/items")({
   head: () => ({
     meta: [
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/items")({
   }),
   component: ItemsPage,
 });
+
 function ItemsPage() {
   const items = useStore((s) => s.items);
   const cats = useStore((s) => s.categories).filter((c) => !c.archived).map((c) => c.name);
@@ -31,6 +33,7 @@ function ItemsPage() {
       <Plus className="size-5" /> Add Item
     </button>
   );
+
   return (
     <div>
       <CategoryManager />
@@ -108,7 +111,9 @@ function ItemsPage() {
     </div>
   );
 }
+
 type Row = { id: string; name: string; price: string };
+
 function ItemForm({ item, onClose }: { item: Item | "new" | null; onClose: () => void }) {
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
@@ -118,6 +123,7 @@ function ItemForm({ item, onClose }: { item: Item | "new" | null; onClose: () =>
     </Dialog>
   );
 }
+
 function FormBody({ item, onClose }: { item: Item | null; onClose: () => void }) {
   const [name, setName] = useState(item?.name ?? "");
   const activeCats = useStore((s) => s.categories).filter((c) => !c.archived).map((c) => c.name);
@@ -129,6 +135,7 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
   const [rows, setRows] = useState<Row[]>(
     item?.hasSizes ? item.sizes.map((s) => ({ id: s.id, name: s.name, price: String(s.price) })) : [{ id: uid(), name: "", price: "" }],
   );
+
   const save = (): void => {
     const n = name.trim();
     if (!n) { toast.error("Enter an item name"); return; }
@@ -150,7 +157,9 @@ function FormBody({ item, onClose }: { item: Item | null; onClose: () => void })
     toast.success(item ? "Item updated" : "Item added");
     onClose();
   };
+
   const input = "w-full rounded-xl bg-secondary px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-ring";
+
   return (
     <>
       <DialogHeader><DialogTitle className="text-xl font-extrabold">{item ? "Edit Item" : "Add Item"}</DialogTitle></DialogHeader>
